@@ -1,0 +1,118 @@
+{
+    "soil_types": [
+        {
+            "name": "Alluvial Soils",
+            "color": "lightgreen"
+        },
+        {
+            "name": "Clay",
+            "color": "brown"
+        },
+        {
+            "name": "Clay Loam",
+            "color": "rgba(165, 42, 42, 0.285)"
+        },
+        {
+            "name": "Gravelly Loam",
+            "color": "tan"
+        },
+        {
+            "name": "Loam",
+            "color": "yellow"
+        },
+        {
+            "name": "Sandy Loam",
+            "color": "gold"
+        },
+        {
+            "name": "Silt Loam",
+            "color": "gray"
+        }
+    ],
+    "crops": [
+        {
+            "name": "Almonds",
+            "color": "green"
+        },
+        {
+            "name": "Artichokes",
+            "color": "purple"
+        },
+        {
+            "name": "Barley",
+            "color": "brown"
+        },
+        {
+            "name": "Beans",
+            "color": "yellow"
+        },
+        {
+            "name": "Beets",
+            "color": "red"
+        },
+        {
+            "name": "Broccoli",
+            "color": "darkgreen"
+        },
+        {
+            "name": "Carrots",
+            "color": "orange"
+        },
+        {
+            "name": "Cauliflowers",
+            "color": "white"
+        },
+        {
+            "name": "Chard",
+            "color": "lightgreen"
+        },
+        {
+            "name": "Cotton",
+            "color": "pink"
+        },
+        {
+            "name": "Garlic",
+            "color": "whitesmoke"
+        },
+        {
+            "name": "Grapes",
+            "color": "purple"
+        },
+        {
+            "name": "Lettuce",
+            "color": "darkcyan"
+        },
+        {
+            "name": "Melons",
+            "color": "violet"
+        },
+        {
+            "name": "Okra",
+            "color": "darkseagreen"
+        },
+        {
+            "name": "Onions",
+            "color": "palevioletred"
+        },
+        {
+            "name": "Peppers",
+            "color": "black"
+        },
+        {
+            "name": "Spinach",
+            "color": "greenyellow"
+        },
+        {
+            "name": "Tomatoes",
+            "color": "darkred"
+        },
+        {
+            "name": "Walnuts",
+            "color": "brown"
+        },
+        {
+            "name": "Wheat",
+            "color": "yellow"
+        }
+    ]
+}

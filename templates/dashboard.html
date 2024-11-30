@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soil and Crop Analysis</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+
+        .map-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            height: 500px;
+        }
+
+        .map-frame {
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            width: 47%;
+            /* Slightly increased width */
+            height: 1000px;
+            /* Slightly increased height */
+            overflow: hidden;
+        }
+
+        .legend-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .legend {
+            display: inline-flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            font-size: 14px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #ffffff;
+            max-width: 90%;
+            margin-top: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+        }
+
+        .chart-container {
+            flex: 1 1 calc(33.333% - 20px);
+            /* Each chart takes up 1/3 of the row minus the gap */
+            min-width: 300px;
+            /* Ensures charts have a minimum width */
+            box-sizing: border-box;
+        }
+
+        #map_1,
+        #map_2 {
+            width: 100%;
+            height: 100%;
+        }
+
+        #data-table-container {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            display: none;
+            /* Initially hidden */
+        }
+
+        #submit-button,
+        #reset-button {
+            margin-bottom: 10px;
+        }
+
+        /* Optional: Make the charts responsive */
+        @media (max-width: 1024px) {
+            .chart-container {
+                flex: 1 1 calc(50% - 20px);
+                /* 2 charts per row on medium screens */
+            }
+        }
+
+        @media (max-width: 768px) {
+            .chart-container {
+                flex: 1 1 100%;
+                /* 1 chart per row on smaller screens */
+            }
+        }
+    </style>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+</head>
+
+<body>
+    <div class="container-fluid">
+        <h2 class="text-center mt-4">Soil and Crop Analysis Dashboard</h2>
+
+        <div class="card">
+            <div class="card-body">
+                <!-- Toggle button to switch between Zip Code and Date Range -->
+                <button id="toggle-button" class="btn btn-secondary btn-block mb-3">Select Date Range</button>
+
+                <!-- Zip Code Section -->
+                <div class="row mt-4" id="zip-code-section">
+                    <div class="col-md-12 col-lg-6">
+
+                        <label for="zip_code-select">Select Zip Code:</label>
+                        <select id="zip_code-select" class="form-control">
+                            <option value="">Select Zip Code</option>
+                            {% for zip_code in zip_codes %}
+                            <option value="{{ zip_code }}">{{ zip_code }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Date Range Section (Initially hidden) -->
+                <div class="row mt-4" id="date-range-section" style="display:none;">
+                    <div class="col col-md-6">
+
+                        <label for="start-date">Start Date:</label>
+                        <input type="date" id="start-date" class="form-control" min="{{ min_date }}"
+                            max="{{ max_date }}">
+                    </div>
+
+                    <div class="col col-md-6">
+
+                        <label for="end-date">End Date:</label>
+                        <input type="date" id="end-date" class="form-control" min="{{ min_date }}" max="{{ max_date }}">
+
+                    </div>
+                </div>
+
+                <!-- Submit and Reset Buttons -->
+                <div class="row mt-4">
+                    <div class="col-6">
+                        <button id="submit-button" class="btn btn-primary btn-block" disabled>Submit</button>
+                    </div>
+
+                    <div class="col-6">
+                        <button id="reset-button" class="btn btn-danger btn-block">Reset</button>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+
+
+
+
+
+        <!-- Page Content (Maps, Charts, Table) -->
+        <div id="whole_page" style="display: none;">
+            <!-- Maps Section -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="text-center">Soil Map</h5>
+                            <div id="map_1" class="map-frame" style="width: 100%; height: 400px;">
+                                <!-- Map 1 will load here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="text-center">Crop Map</h5>
+                            <div id="map_2" class="map-frame" style="width: 100%; height: 400px;">
+                                <!-- Map 2 will load here -->
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <div class="legend-container">
+                                <div class="legend" id="soil-legend">
+                                    <strong>Soil Types:</strong>
+                                    <div class="legend-item">
+                                        <div class="legend-color" style="background-color: lightgreen;"></div> Alluvial
+                                        Soils
+                                    </div>
+                                    <!-- Add more soil types as needed -->
+                                </div>
+                                <div class="legend mt-2" id="crop-legend">
+                                    <strong>Crops:</strong>
+                                    <div class="legend-item">
+                                        <div class="legend-color" style="background-color: green;"></div> Almonds
+                                    </div>
+                                    <!-- Add more crop types as needed -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Graph Section -->
+            <div class="row mt-4">
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5>Soil Moisture</h5>
+                            <div id="soil-moisture-chart" style="width: 100%; height: 400px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5>Soil Temperature</h5>
+                            <div id="soil-temperature-chart" style="width: 100%; height: 400px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5>Nitrogen Levels</h5>
+                            <div id="nitrogen-chart" style="width: 100%; height: 400px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5>Soil pH</h5>
+                            <div id="soil-ph-chart" style="width: 100%; height: 400px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5>Soil Carbon</h5>
+                            <div id="soil-carbon-chart" style="width: 100%; height: 400px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pie Charts for Soil Type and Crop Type -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5>Soil Type Distribution</h5>
+                            <div id="soil-type-pie" style="width: 100%; height: 400px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5>Crop Type Distribution</h5>
+                            <div id="crop-type-pie" style="width: 100%; height: 400px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Table Section -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5>Records</h5>
+                            <table class="table table-bordered table-striped" id="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Soil Moisture</th>
+                                        <th>Soil Temperature</th>
+                                        <th>Nitrogen</th>
+                                        <th>Soil pH Value</th>
+                                        <th>Soil Carbon</th>
+                                        <th>Soil Type</th>
+                                        <th>Crop Type</th>
+                                        <th>Zip Code</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Data rows will be inserted here dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.24.2.min.js"></script>
+    <script type="text/javascript" charset="utf8"
+        src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+
+    <script>
+        // Wait until the DOM is fully loaded
+        document.addEventListener("DOMContentLoaded", function () {
+            const toggleButton = document.getElementById('toggle-button');
+            const zipCodeSection = document.getElementById('zip-code-section');
+            const dateRangeSection = document.getElementById('date-range-section');
+            const submitButton = document.getElementById('submit-button');
+            const resetButton = document.getElementById('reset-button');
+
+            // on initial load
+            // Hide both sections and reset toggle button text
+            zipCodeSection.style.display = 'none';
+            dateRangeSection.style.display = 'none';
+            toggleButton.textContent = 'Select Zip Code';
+
+            // Disable the submit button
+            submitButton.disabled = true;
+
+            let selectedFilter = null;
+
+            // Toggle button action
+            toggleButton.addEventListener('click', function () {
+                if (selectedFilter === 'zip-code') {
+                    // If zip code was selected, show date range and hide zip code
+                    zipCodeSection.style.display = 'none';
+                    dateRangeSection.style.display = 'block';
+                    selectedFilter = 'date-range';
+                    toggleButton.textContent = 'Select Zip Code'; // Change button text
+
+                    // Clear date range fields
+                    document.getElementById('start-date').value = '';
+                    document.getElementById('end-date').value = '';
+                    document.getElementById('zip_code-select').value = '';
+                } else {
+                    // If date range was selected, show zip code and hide date range
+                    dateRangeSection.style.display = 'none';
+                    zipCodeSection.style.display = 'block';
+                    selectedFilter = 'zip-code';
+                    toggleButton.textContent = 'Select Date Range'; // Change button text
+
+                    // Clear zip code field
+                    document.getElementById('start-date').value = '';
+                    document.getElementById('end-date').value = '';
+                    document.getElementById('zip_code-select').value = '';
+                }
+                checkSubmitButton(); // Check if a field is selected
+            });
+
+            // Check if either Zip Code or Date Range is selected to enable the submit button
+            function checkSubmitButton() {
+                if (selectedFilter === 'zip-code') {
+                    const zipCodeValue = document.getElementById('zip_code-select').value;
+                    submitButton.disabled = !zipCodeValue; // Enable submit if zip code is selected
+                } else if (selectedFilter === 'date-range') {
+                    const startDate = document.getElementById('start-date').value;
+                    const endDate = document.getElementById('end-date').value;
+                    submitButton.disabled = !(startDate && endDate); // Enable submit if both dates are selected
+                }
+            }
+
+            // Add event listeners for zip code and date fields to check submit button state
+            document.getElementById('zip_code-select').addEventListener('change', checkSubmitButton);
+            document.getElementById('start-date').addEventListener('change', checkSubmitButton);
+            document.getElementById('end-date').addEventListener('change', checkSubmitButton);
+
+            // Reset button functionality to clear the fields
+            resetButton.addEventListener('click', function () {
+                // Reset the selected filter to none
+                selectedFilter = null;
+
+                // Clear all input fields and hide sections
+                document.getElementById('zip_code-select').value = '';
+                document.getElementById('start-date').value = '';
+                document.getElementById('end-date').value = '';
+
+                // Hide both sections and reset toggle button text
+                zipCodeSection.style.display = 'none';
+                dateRangeSection.style.display = 'none';
+                toggleButton.textContent = 'Select Zip Code';
+
+                // Disable the submit button
+                submitButton.disabled = true;
+
+                // hide the whole_page
+                document.getElementById('whole_page').style.display = 'none';
+            });
+        });
+    </script>
+
+    <script>
+        function populateLegends(soilColors, cropIcons) {
+            const soilLegendContainer = document.getElementById("soil-legend");
+            const cropLegendContainer = document.getElementById("crop-legend");
+
+            // Clear existing legends
+            soilLegendContainer.innerHTML = "<strong>Soil Types:</strong>";
+            cropLegendContainer.innerHTML = "<strong>Crops:</strong>";
+
+            // Populate soil types legend
+            for (const soil of soilColors) {
+                const soilItem = document.createElement("div");
+                soilItem.className = "legend-item";
+                soilItem.innerHTML = `
+            <div class="legend-color" style="background-color: ${soil.color};"></div> ${soil.name}
+        `;
+                soilLegendContainer.appendChild(soilItem);
+            }
+
+            // Populate crop types legend
+            for (const crop of cropIcons) {
+                const cropItem = document.createElement("div");
+                cropItem.className = "legend-item";
+                cropItem.innerHTML = `
+            <div class="legend-color" style="background-color: ${crop.color};"></div> ${crop.name}
+        `;
+                cropLegendContainer.appendChild(cropItem);
+            }
+        }
+    </script>
+    <script>
+        $('#submit-button').click(function () {
+            let data_type = '';
+            // const lat_lon = $('#lat-lon-select').val();
+            const zip_code = $('#zip_code-select').val()
+            const start_date = $('#start-date').val();
+            const end_date = $('#end-date').val();
+
+            if (!(zip_code || start_date || end_date)) {
+                alert('Please select either a zip code or a date range.');
+                return;
+            }
+
+            $.ajax({
+                url: '/get_data',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    start_date: start_date,
+                    end_date: end_date,
+                    zip_code: zip_code
+                }),
+                success: function (response) {
+                    $('#map_1').html(`<iframe src="${response.map_1}" width="100%" height="100%"></iframe>`);
+                    $('#map_2').html(`<iframe src="${response.map_2}" width="100%" height="100%"></iframe>`);
+
+                    populateLegends(response.soil_colors, response.crop_icons);
+
+                    // Destroy the existing DataTable instance if it exists
+                    if ($.fn.dataTable.isDataTable('#data-table')) {
+                        $('#data-table').DataTable().clear().destroy(); // Clear and destroy the instance
+                    }
+
+                    // Clear the table body before appending new data
+                    const tbody = $('#data-table tbody');
+                    tbody.empty();
+
+                    response.data.forEach(row => {
+                        // Convert date to a sortable format (ISO)
+                        const formattedDate = new Date(row.date).toISOString();
+
+                        // Format the date for user readability
+                        const userReadableDate = new Date(row.date).toLocaleString('en-GB', {
+                            weekday: 'short',
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                        });
+
+                        tbody.append(
+                            `<tr>
+                                <td data-order="${formattedDate}">${userReadableDate}</td>
+                                <td>${row.Soil_Moisture}</td>
+                                <td>${row.Soil_Temperature}</td>
+                                <td>${row.Nitrogen}</td>
+                                <td>${row.Soil_ph_value}</td>
+                                <td>${row.Soil_Carbon}</td>
+                                <td>${row.soil_type}</td>
+                                <td>${row.crop_type}</td>
+                                <td>${row.zip_code}</td>
+                            </tr>`
+                        );
+                    });
+                    $('#whole_page').show();
+
+                    // Extract data for the chart
+                    const dates = response.data.map(row => row.date);
+                    const soilMoisture = response.data.map(row => row.Soil_Moisture);
+                    const soilTemperature = response.data.map(row => row.Soil_Temperature);
+                    const nitrogen = response.data.map(row => row.Nitrogen);
+                    const soilPh = response.data.map(row => row.Soil_ph_value);
+                    const soilCarbon = response.data.map(row => row.Soil_Carbon);
+
+                    // Pie chart data for Soil Type and Crop Type
+                    const soilTypeCounts = {};
+                    const cropTypeCounts = {};
+
+                    // Count occurrences of each soil type and crop type
+                    response.data.forEach(row => {
+                        soilTypeCounts[row.soil_type] = (soilTypeCounts[row.soil_type] || 0) + 1;
+                        cropTypeCounts[row.crop_type] = (cropTypeCounts[row.crop_type] || 0) + 1;
+                    });
+
+                    // Prepare data for Pie charts
+                    const soilTypeLabels = Object.keys(soilTypeCounts);
+                    const soilTypeValues = Object.values(soilTypeCounts);
+                    const soilTypeColors = response.soil_types ? response.soil_types.map(soil => soil.color) : []; // Use soil type colors
+
+                    const cropTypeLabels = Object.keys(cropTypeCounts);
+                    const cropTypeValues = Object.values(cropTypeCounts);
+                    const cropTypeColors = response.crops ? response.crops.map(crop => crop.color) : []; // Use crop type colors
+
+                    // Convert the dates to proper Date objects
+                    const parsedDates = dates.map(date => new Date(date));
+
+                    // Function to create individual charts
+                    function createChart(elementId, title, xData, yData, yAxisTitle, lineColor) {
+                        const trace = {
+                            x: xData,
+                            y: yData,
+                            type: 'scatter',
+                            mode: 'lines+markers',
+                            name: title,
+                            line: { color: lineColor }
+                        };
+
+                        const layout = {
+                            title: title,
+                            xaxis: {
+                                title: 'Date',
+                                type: 'date',  // Ensure the x-axis is a date
+                                tickformat: '%b %d, %Y',  // Format the dates for better readability
+                                tickmode: 'auto',  // Automatically determine tick spacing
+                            },
+                            yaxis: {
+                                title: yAxisTitle,
+                                rangemode: 'tozero'  // Ensure the y-axis starts from zero
+                            },
+                            showlegend: false,
+                            margin: {
+                                l: 40, r: 40, t: 40, b: 80  // Adjust the margins for better padding
+                            }
+                        };
+
+                        Plotly.newPlot(elementId, [trace], layout);
+                    }
+
+                    // Create individual charts
+                    createChart('soil-moisture-chart', 'Soil Moisture', parsedDates, soilMoisture, 'Soil Moisture (%)', 'blue');
+                    createChart('soil-temperature-chart', 'Soil Temperature', parsedDates, soilTemperature, 'Soil Temperature (°C)', 'red');
+                    createChart('nitrogen-chart', 'Nitrogen Levels', parsedDates, nitrogen, 'Nitrogen', 'green');
+                    createChart('soil-ph-chart', 'Soil pH', parsedDates, soilPh, 'Soil pH', 'orange');
+                    createChart('soil-carbon-chart', 'Soil Carbon', parsedDates, soilCarbon, 'Soil Carbon', 'purple');
+
+                    // Create Pie charts for Soil Type and Crop Type
+                    function createPieChart(elementId, title, labels, values) {
+                        const trace = {
+                            labels: labels,
+                            values: values,
+                            type: 'pie',
+                            name: title
+                        };
+
+                        const layout = {
+                            title: title
+                        };
+
+                        Plotly.newPlot(elementId, [trace], layout);
+                    }
+
+                    // Create the pie charts
+                    createPieChart('soil-type-pie', 'Soil Types', soilTypeLabels, soilTypeValues);
+                    createPieChart('crop-type-pie', 'Crop Types', cropTypeLabels, cropTypeValues);
+
+                    $('#data-table').DataTable({
+                        "paging": true,         // Enable pagination
+                        "searching": false,     // Disable the search bar
+                        "ordering": true,       // Enable column sorting
+                        "info": true,           // Show table information
+                        "lengthMenu": [10, 25, 50, 75, 100], // Set page length options
+                        "language": {
+                            "search": "",        // Disable custom search label
+                            "paginate": {
+                                "next": "Next",
+                                "previous": "Previous"
+                            }
+                        }
+                    });
+
+                },
+                error: function () {
+                    alert('No data found for the selected parameters.');
+                }
+            });
+            $('#data-table-container').toggle();
+        });
+    </script>
+</body>
+
+</html>
